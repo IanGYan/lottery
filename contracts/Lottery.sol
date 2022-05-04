@@ -9,7 +9,6 @@ pragma solidity >=0.4.22 <0.9.0;
  * 存储在合约钱包中的所有资金都将发送给获胜者，之后游戏会开始新的一轮。
 */
 
-
 contract Lottery {
 
   // 投注人地址集合
@@ -20,6 +19,12 @@ contract Lottery {
   uint public startTime;
   // 每次可以开奖的结束时间点
   uint public endTime;
+
+  // 投注Event
+  event Betted(address indexed _from, uint _value);
+
+  // 开奖Event
+  event Winning(address indexed _winner, uint _value);
 
   constructor() {
     players = new address payable[](0);
@@ -38,13 +43,13 @@ contract Lottery {
       draw();
       // 开奖后，启动新一轮的投注
       newRound();
-    } else {
-      // 投注
-      // 保证投注的金额为额定金额
-      require(msg.value == lotteryBet, "Must send 0.1 ether amount");
-      // 将该彩民的地址添加进数组
-      players.push(payable(msg.sender));
     }
+    // 投注
+    // 保证投注的金额为额定金额
+    require(msg.value == lotteryBet, "Must send 0.1 ether amount");
+    // 将该彩民的地址添加进数组
+    players.push(payable(msg.sender));
+    emit Betted(msg.sender, msg.value);
   }
 
   // 开奖
@@ -58,10 +63,12 @@ contract Lottery {
 
     // 随机抽奖
     address payable winner;
-    winner = players[uint(randomHash)%players.length];
+    winner = players[uint(randomHash) % players.length];
 
     // 将奖金池中的所有金额转账给中奖人
-    winner.transfer(getBalance());
+    uint bonus = getBalance();
+    winner.transfer(bonus);
+    emit Winning(winner, bonus);
 
   }
 
